@@ -117,7 +117,6 @@
     <img>
 </body class="center" src="Arrow.png">
 <script>
-
     var feddy = { element: document.getElementById("boat"), Location: window.innerWidth / 2 - document.getElementById("boat").clientWidth / 2 }
     var plunger = { falling: false, selfHight: 25 / 100 * window.innerHeight, hit: false, element: document.getElementById("plung"), Location: feddy.Location + 10 }
 
@@ -142,11 +141,11 @@
     var ffish = []
 
     const WALL_DISTANCE = window.innerWidth * .15;
-    console.log(WALL_DISTANCE);
     const LEFT_WALL = feddy.Location - WALL_DISTANCE * 1.7;
     const RIGHT_WAll = feddy.Location + WALL_DISTANCE;
-    console.log(LEFT_WALL, RIGHT_WAll)
 
+    const fishBoxMultiplier = { x: 0.8, y: 0.8 }
+    const plungerBoxMultiplier = { x: 0.8, y: 0.9 }
 
     plunger.element.style.top = plunger.selfHight + "px"
     feddy.element.style.left = feddy.Location
@@ -163,7 +162,7 @@
     line.style.height = LBaseHeight
     plunger.element.style.top = PBaseHeight
 
-    //movent
+    //movement
     document.addEventListener('keydown', (event) => {
         if (!plunger.falling) {
 
@@ -187,29 +186,34 @@
     })
     //plungLogic
     function plunged() {
-    if (!plunger.falling) {
-        var increment = 0.3 / 100 * window.innerHeight;
-        const limit = parseFloat(PBaseHeight); // Ensure limit is a number
-        plunger.selfHeight = parseFloat(PBaseHeight); // Convert to number if it's a string
+        if (!plunger.falling) {
+            var increment = 0.3 / 100 * window.innerHeight;
+            const limit = parseFloat(PBaseHeight); // Ensure limit is a number
+            plunger.selfHeight = parseFloat(PBaseHeight); // Convert to number if it's a string
 
-        var animate = function () {
-            for (var fish of ffish) {
-                // Skip if fish.element is undefined or null
-                if (!fish.element) continue;
+            var animate = function () {
+                for (var fish of ffish) {
+                    // Skip if fish.element is undefined or null
+                    if (!fish.element) continue;
 
-                // Check for collision using AABB (Axis-Aligned Bounding Box) method
-                var overlapX = fish.position <= plunger.Location + plunger.element.clientWidth && // fish is to the right of plunger
-                               fish.position + fish.element.clientWidth >= plunger.Location; // fish is to the left of plunger
+                    // Check for collision using AABB (Axis-Aligned Bounding Box) method
+                    var overlapX = fish.position + fish.element.clientWidth * (1 - fishBoxMultiplier.x) / 2 <= plunger.Location + plunger.element.clientWidth * (1 + plungerBoxMultiplier.x) / 2 && // fish is to the right of plunger
+                        fish.position + fish.element.clientWidth * (1 + fishBoxMultiplier.x) / 2 >= plunger.Location + plunger.element.clientWidth * (1 - plungerBoxMultiplier.x) / 2; // fish is to the left of plunger
 
-                var overlapY = fish.depth <= plunger.selfHeight + plunger.element.clientHeight && // fish is below plunger
-                               fish.element.clientHeight + fish.depth >= plunger.selfHeight / 1.5; // fish is above plunger
+                    var overlapY = fish.depth + fish.element.clientHeight * (1 - fishBoxMultiplier.y) / 2 <= plunger.selfHeight + plunger.element.clientHeight * (1 + plungerBoxMultiplier.y) / 2 && // fish is below plunger
+                        fish.depth + fish.element.clientHeight * (1 + fishBoxMultiplier.y) / 2 >= plunger.selfHeight + plunger.element.clientHeight * (1 - plungerBoxMultiplier.y) / 2; // fish is above plunger
 
-                // Only count as a hit if there is overlap in both axes
-                if (!plunger.hit && !fishThatGotHit && overlapX && overlapY) {
-                    fishThatGotHit = fish;
-                    plunger.hit = true;
+                    console.log(
+                        'overlapX:', overlapX,
+                        'overlapY:', overlapY
+                    );
+
+                    // Only count as a hit if there is overlap in both axes
+                    if (!plunger.hit && !fishThatGotHit && overlapX && overlapY) {
+                        fishThatGotHit = fish;
+                        plunger.hit = true;
+                    }
                 }
-            }
                 if (!plunger.hit) {
                     plunger.falling = true;
                     plunger.selfHeight += increment; // Correctly increment as a number
@@ -264,7 +268,6 @@
         }
     }
 
-    
 
     function BBBBB() {
         const fishTypes = ['Bf', 'Pf', 'Gf', 'Of'];
@@ -293,7 +296,11 @@
             'Pe': { name: 'Pearl', height: 66, score: 100 }
         };
 
+        // testing
+        allFish = ['Pfish1']
         for (let fish of allFish) {
+            if (ffish.length > 0) break
+
             let currentFish = fish.substring(0, 2);
             let i = fish.substring(fish.length - 1);
             let fishType = fishTypes[currentFish];
@@ -383,10 +390,10 @@
                 let fishBox = document.createElement('div');
                 fishBox.className = 'hitbox';
                 fishBox.style.position = 'absolute';
-                fishBox.style.left = fish.element.style.left;
-                fishBox.style.top = fish.element.style.top;
-                fishBox.style.width = fish.element.clientWidth + 'px';
-                fishBox.style.height = fish.element.clientHeight + 'px';
+                fishBox.style.left = Number.parseFloat(fish.element.style.left) - fish.element.clientWidth * (fishBoxMultiplier.x - 1) / 2;
+                fishBox.style.top = Number.parseFloat(fish.element.style.top) - fish.element.clientHeight * (fishBoxMultiplier.y - 1) / 2;
+                fishBox.style.width = fish.element.clientWidth * fishBoxMultiplier.x + 'px';
+                fishBox.style.height = fish.element.clientHeight * fishBoxMultiplier.y + 'px';
                 fishBox.style.border = '2px solid green';
                 document.body.appendChild(fishBox);
             }
@@ -396,14 +403,13 @@
         let plungerBox = document.createElement('div');
         plungerBox.className = 'hitbox';
         plungerBox.style.position = 'absolute';
-        plungerBox.style.left = plunger.element.style.left;
-        plungerBox.style.top = plunger.element.style.top;
-        plungerBox.style.width = plunger.element.clientWidth + 'px';
-        plungerBox.style.height = plunger.element.clientHeight + 'px';
+        plungerBox.style.left = Number.parseFloat(plunger.element.style.left) - plunger.element.clientWidth * (plungerBoxMultiplier.x - 1) / 2;
+        plungerBox.style.top = Number.parseFloat(plunger.element.style.top) - plunger.element.clientHeight * (plungerBoxMultiplier.y - 1) / 2;
+        plungerBox.style.width = plunger.element.clientWidth * plungerBoxMultiplier.x + 'px';
+        plungerBox.style.height = plunger.element.clientHeight * plungerBoxMultiplier.y + 'px';
         plungerBox.style.border = '2px solid red';
         document.body.appendChild(plungerBox);
     }
-
 
 
     BBBBB()
@@ -441,4 +447,5 @@
     //start/game end = 2 options display normal + endless.  hight score next to endless
 
     //fish generation logic? -->
+
 </html>
